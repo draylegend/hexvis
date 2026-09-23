@@ -1,0 +1,26 @@
+{
+  "name": "@hexvis/source",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LoL advisor overlay: runes, builds and win odds",
+  "license": "MIT",
+  "author": {
+    "name": "Vladimir Drayling",
+    "email": "draylegend@gmail.com",
+    "url": "https://linkedin.com/in/draylegend"
+  },
+  "type": "module",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@nx/js": "23.2.1",
+    "@nx/workspace": "23.2.1",
+    "husky": "9.1.7",
+    "nx": "23.2.1",
+    "oxfmt": "0.70.0"
+  }
+}

@@ -1,0 +1,2 @@
+bunx nx format:write --all
+git add -u
