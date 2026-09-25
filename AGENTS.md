@@ -2,6 +2,10 @@
 
 ## Rules
 
+- **Development only on specific branch** — working on dev is prohibited and gets rejected on GitHub.
+- **Dev workflow** — always make sure a branch is checked out. Branch creation happens mostly in GH UI. Branch name format: issue_number-issue-title.
+- **Concise issue title** — only simple and minimal issue titles so branch names are short as well.
+- **Remove local branch after successful PR merge/squash/etc**.
 - **No commits without explicit user review** — show the diff, wait for approval, then commit.
 - **No pushes unless explicitly asked** — commits stay local until the user says otherwise.
 - **No new dependencies** (npm packages, CLIs, tools) without explicit approval.
