@@ -12,10 +12,10 @@ Description in `./README.md`.
 - **Development only on specific branch** — working on dev is prohibited and gets rejected on GitHub.
 - **Dev workflow** — always make sure a branch is checked out. Branch creation happens mostly in GH UI. Branch name format: issue_number-issue-title.
 - **Concise issue title** — lower case, only simple and minimal issue titles so branch names are short as well.
-- **Commit format** — strictly follow the Conventional Commits specification (`feat(tracker): ...`, `fix(overlay): ...`).
 - **Remove local branch after successful PR merge/squash/etc**.
-- **No commits without explicit user review** — show the diff, wait for approval, then commit.
-- **No pushes unless explicitly asked** — commits stay local until the user says otherwise.
+- **No commits without explicit user review** — present a compliant commit message as a plain, copyable text paragraph at the very end of your response. The user will review the changes in the IDE source control and commit them. Sometimes you'll be allowed to commit and push.
+- **Commit format** — strictly follow the Conventional Commits specification (`feat(tracker): ...`, `fix(overlay): ...`). The commit message must be automatically suggested by the agent after each implemented code block as a plain, easily copyable text paragraph at the very end of your response.
+- **Roadmap execution** — you are prohibited from modifying `roadmap.md`. Marking milestones and checking off steps `[x]` is strictly reserved for human developers during review.
 - **No new dependencies** (npm packages, CLIs, tools) without explicit approval.
 - **No destructive operations** — don't reset, revert, or delete user work; ask first.
 - **Latest framework features** — enforce modern Angular style: strictly use the `inject()` function for dependency injection over constructors. Leverage Signals (`input`, `model`, `computed`, `effect`) for reactive state. Use `protected` on class members bound in templates and `readonly` for Angular-initialized properties. Prefer native class/style bindings over `ngClass`/`ngStyle`.
