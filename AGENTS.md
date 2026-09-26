@@ -12,24 +12,26 @@ Description in `./README.md`.
 - **Development only on specific branch** — working on dev is prohibited and gets rejected on GitHub.
 - **Dev workflow** — always make sure a branch is checked out. Branch creation happens mostly in GH UI. Branch name format: issue_number-issue-title.
 - **Concise issue title** — lower case, only simple and minimal issue titles so branch names are short as well.
+- **Commit format** — strictly follow the Conventional Commits specification (`feat(tracker): ...`, `fix(overlay): ...`).
 - **Remove local branch after successful PR merge/squash/etc**.
 - **No commits without explicit user review** — show the diff, wait for approval, then commit.
 - **No pushes unless explicitly asked** — commits stay local until the user says otherwise.
 - **No new dependencies** (npm packages, CLIs, tools) without explicit approval.
 - **No destructive operations** — don't reset, revert, or delete user work; ask first.
-- **Latest framework features**
-- **File names** — pascal-case.
+- **Latest framework features** — enforce modern Angular style: strictly use the `inject()` function for dependency injection over constructors. Leverage Signals (`input`, `model`, `computed`, `effect`) for reactive state. Use `protected` on class members bound in templates and `readonly` for Angular-initialized properties. Prefer native class/style bindings over `ngClass`/`ngStyle`.
+- **File names** — strictly follow the official Angular Style Guide: separate words with hyphens, matching the TypeScript identifier exactly (`user-profile.ts`, `champ-select.ts`). Shared names for template/styles (`user-profile.html`, `user-profile.css`). Unit tests must end with `.spec.ts` (`user-profile.spec.ts`). Avoid overly generic file names like helpers or utils.
 - **Var names** — camelCase.
 - **Const names** — SNAKE_CASE (screaming).
-- **Server** — Bun API only.
+- **Server & Database** — Bun API paired with embedded SurrealDB engine (`surrealkv://`).
+- **AI Core Interfacing** — Strictly non-autoregressive single-forward-pass calls to local Laya API (`/v1/systemone`). No external LLM calls or token streaming.
 - **Runtime & Package Manager** — Bun (`bun i`, `bun test`).
-- **UI Framework** — Angular latest/next version.
+- **UI Framework** — Angular latest/next version (Strictly standalone components, zero boilerplate modules, organize subdirectories strictly by feature areas).
 - **Desktop Shell** — Electron
 
 ## App rules
 
 - Modify only app-created rune pages. Never modify/delete user-owned rune pages.
-- Overlays passthrough.
+- Overlays passthrough (`win.setIgnoreMouseEvents(true)` activation during live match state).
 - Real-time only.
 
 ## Coding
@@ -39,5 +41,5 @@ Description in `./README.md`.
 - **No unrequested abstractions** — no interface with one implementation, no config for a value that never changes, no boilerplate.
 - **Root cause, not symptom** — grep every caller, fix the shared function once.
 - **Shortest working diff** — deletion over addition, boring over clever, fewest files.
-- **Never simplify away** — validation at trust boundaries (LCU, IPC), error handling that prevents data loss (rune pages), security, accessibility.
+- **Never simplify away** — validation at trust boundaries (LCU API, Live Client API port 2999, Electron IPC), error handling that prevents data loss (rune pages), security, accessibility.
 - **Non-trivial logic leaves one test** — the smallest thing that fails if it breaks; trivial one-liners need none.
