@@ -14,11 +14,11 @@ _Goal: Initialize the workspace architecture, applications, and verify local con
 - [x] **Step 1.1** | `feat(workspace): init`
   - Setup root `package.json`, `oxfmt`, `commitlint` and `husky`.
 - [x] **Step 1.2** | `chore(docs): add agents.md`
-- [ ] **Step 1.2** | `feat(tracker): generate background parsing application shell running on Bun`
+- [ ] **Step 1.3** | `feat(tracker): generate background parsing application shell running on Bun`
   - Create the `apps/tracker` directory structure with a lightweight, high-performance WebSocket server routing.
-- [ ] **Step 1.3** | `feat(overlay): generate standalone desktop shell application layout using Electron`
+- [ ] **Step 1.4** | `feat(overlay): generate standalone desktop shell application layout using Electron`
   - Create `apps/overlay` containing the main window management scripts and standard asset paths.
-- [ ] **Step 1.4** | `feat(container): orchestrate local environment layout for non-autoregressive engine`
+- [ ] **Step 1.5** | `feat(container): orchestrate local environment layout for non-autoregressive engine`
   - Write the `docker-compose.yaml` configuration and `.env` template targeting the local endpoint on port 8000.
 
 ### 📍 Milestone 2: Game Patch Sync & Embedded Storage RAG Setup
