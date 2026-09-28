@@ -22,6 +22,10 @@ Description in `./README.md`.
 - **File names** — strictly follow the official Angular Style Guide: separate words with hyphens, matching the TypeScript identifier exactly (`user-profile.ts`, `champ-select.ts`). Shared names for template/styles (`user-profile.html`, `user-profile.css`). Unit tests must end with `.spec.ts` (`user-profile.spec.ts`). Avoid overly generic file names like helpers or utils.
 - **Var names** — camelCase.
 - **Const names** — SNAKE_CASE (screaming).
+- **Import paths** — extensionless across the whole workspace; configs in TypeScript where supported.
+- **@Component keys** — semantic order: `selector` (if exists), `imports`, `templateUrl`/`template`, `styles`/`styleUrl`. Never alphabetized; no linter automation exists for custom key order (hence `sort-keys` off).
+- **Class members** — omit `public`; `#field` for private (convention — no oxlint rule exists); `protected` stays for template-bound members.
+- **Comments after imports** — no comments before imports.
 - **Server & Database** — Electron main process (Node) paired with embedded SurrealDB engine (`surrealkv://`).
 - **AI Core Interfacing** — Strictly non-autoregressive single-forward-pass calls to local Laya API (`/v1/systemone`). No external LLM calls or token streaming.
 - **Runtime & Package Manager** — App runtime: Electron (Node). Bun is the package manager and test runner (`bun i`, `bun test`).

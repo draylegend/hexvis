@@ -25,6 +25,12 @@ node_modules
 !.vscode/extensions.json
 
 # misc
+.nx/cache
+.nx/workspace-data
+.nx/migrate-runs
+.claude/worktrees
+.claude/settings.local.json
+.angular
 /.sass-cache
 /connect.lock
 /coverage
@@ -32,16 +38,9 @@ node_modules
 npm-debug.log
 yarn-error.log
 testem.log
+/__screenshots__
 /typings
 
 # System Files
 .DS_Store
 Thumbs.db
-
-.nx/cache
-.nx/workspace-data
-.nx/migrate-runs
-.claude/worktrees
-.claude/settings.local.json
-
-.angular

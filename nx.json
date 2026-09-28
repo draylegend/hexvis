@@ -6,5 +6,23 @@
     "production": ["default"],
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
-  "nxCloudId": "6ab4638a250729628a735c9b"
+  "nxCloudId": "6ab4638a250729628a735c9b",
+  "targetDefaults": {
+    "@angular/build:application": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "@angular/build:unit-test": { "cache": true, "inputs": ["default", "^production"] }
+  },
+  "plugins": [{ "plugin": "@nx/oxlint", "options": { "targetName": "lint" } }],
+  "generators": {
+    "@nx/angular:application": {
+      "e2eTestRunner": "none",
+      "formatter": "oxfmt",
+      "linter": "oxlint",
+      "style": "css",
+      "unitTestRunner": "vitest-angular"
+    }
+  }
 }

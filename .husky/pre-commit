@@ -1,2 +1,4 @@
 bunx nx format:write --all
+bunx oxlint . -A all -D no-unused-vars --fix-suggestions
+bunx oxlint . --config .husky/oxlint.hook.config.ts --fix-dangerously
 git add -u
