@@ -16,7 +16,7 @@ _Goal: Initialize the workspace architecture, the desktop application shell, and
 - [x] **Step 1.2** `chore(docs): add agents.md`
 - [x] **Step 1.3** `chore(apps): add angular`
 - [x] **Step 1.4** `chore(deps): add electron`
-- [ ] **Step 1.5** `feat(desktop): generate application shell unifying electron main, backend entry, and angular renderer`
+- [x] **Step 1.5** `feat(desktop): generate application shell unifying electron main, backend entry, and angular renderer`
   - Extend `apps/app` with the main window management scripts, the typed IPC surface (`preload.ts` contextBridge), the backend entry running in the main process, and standard asset paths.
 - [ ] **Step 1.6** `feat(container): orchestrate local environment layout for non-autoregressive engine`
   - Write the `docker-compose.yaml` configuration and `.env` template targeting the local endpoint on port 8000.
