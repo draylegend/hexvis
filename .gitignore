@@ -25,6 +25,7 @@ node_modules
 !.vscode/extensions.json
 
 # misc
+.env
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs

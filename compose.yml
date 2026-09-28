@@ -1,0 +1,25 @@
+# Non-autoregressive engine (Laya) — POST /v1/systemone on port 8000.
+# No registry image is published upstream; the build context is the upstream repo
+# pinned to a tag. Loopback only: the API has no authentication.
+services:
+  engine:
+    build:
+      context: https://github.com/NandhaKishorM/laya.git#v0.3.21
+    command: ['laya-serve']
+    container_name: hv-engine
+    ports:
+      # One source for both sides: LAYA_PORT below follows ENGINE_PORT, so the
+      # published and bound ports cannot drift apart.
+      - '127.0.0.1:${ENGINE_PORT:-8000}:${ENGINE_PORT:-8000}'
+    environment:
+      LAYA_PORT: '${ENGINE_PORT:-8000}'
+      # 0 opens the endpoint immediately; checkpoints download on first request.
+      # 1 loads all three before binding (multi-GB first boot).
+      LAYA_PRELOAD: '${LAYA_PRELOAD:-0}'
+    volumes:
+      - engine-cache:/home/laya/.cache/huggingface
+    init: true
+    restart: unless-stopped
+
+volumes:
+  engine-cache:
