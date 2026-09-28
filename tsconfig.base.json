@@ -14,6 +14,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
+    "target": "ES2025",
     "verbatimModuleSyntax": true,
     "paths": {}
   }

@@ -33,6 +33,7 @@ export default {
     'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
     'oxc/no-async-await': 'off',
     'oxc/no-optional-chaining': 'off',
+    'one-var': ['error', 'never'],
     'promise/prefer-await-to-callbacks': 'off',
     'promise/prefer-await-to-then': 'off',
     'sort-imports': ['error', { ignoreDeclarationSort: true }],
