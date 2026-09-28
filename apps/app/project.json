@@ -6,8 +6,21 @@
   "sourceRoot": "apps/app/src",
   "tags": [],
   "targets": {
+    "build-electron": {
+      "cache": true,
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "bun build apps/app/electron/main.ts --target=node --format=cjs --packages=external --outfile dist/electron/main.cjs",
+          "bun build apps/app/electron/preload.ts --target=node --format=cjs --packages=external --outfile dist/electron/preload.cjs"
+        ],
+        "parallel": false
+      },
+      "outputs": ["{workspaceRoot}/dist/electron"]
+    },
     "build": {
       "executor": "@angular/build:application",
+      "dependsOn": ["build-electron"],
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
@@ -15,7 +28,8 @@
         "browser": "apps/app/src/main.ts",
         "tsConfig": "apps/app/tsconfig.app.json",
         "assets": [{ "glob": "**/*", "input": "apps/app/public" }],
-        "styles": ["apps/app/src/styles.css"]
+        "styles": ["apps/app/src/styles.css"],
+        "baseHref": "./"
       },
       "configurations": {
         "production": {
@@ -41,17 +55,13 @@
       }
     },
     "serve": {
+      "cache": false,
       "continuous": true,
-      "executor": "@angular/build:dev-server",
-      "defaultConfiguration": "development",
-      "options": { "port": 4200 },
-      "configurations": {
-        "production": {
-          "buildTarget": "app:build:production"
-        },
-        "development": {
-          "buildTarget": "app:build:development"
-        }
+      "executor": "nx:run-commands",
+      "dependsOn": ["build-electron"],
+      "options": {
+        "parallel": true,
+        "commands": ["bunx nx run app:build:development --watch", "electron dist/electron/main.cjs"]
       }
     },
     "test": {
