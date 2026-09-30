@@ -25,9 +25,9 @@ _Goal: Initialize the workspace architecture, the desktop application shell, and
 
 _Goal: Automatically fetch, translate, and populate the local database with official live-patch text parameters._
 
-- [ ] **Step 2.1** `feat(database): configure embedded database layer using local storage engine`
+- [x] **Step 2.1** `feat(database): configure embedded database layer using local storage engine`
   - Connect the backend runtime to an isolated data directory inside the workspace utilizing split namespaces.
-- [ ] **Step 2.2** `feat(rag): implement automatic patch asset synchronization engine`
+- [x] **Step 2.2** `feat(rag): implement automatic patch asset synchronization engine`
   - Fetch the latest available patch index from official servers, download metadata, and populate the local storage.
 - [ ] **Step 2.3** `feat(rag): build high-speed structural id-to-string translation database resolvers`
   - Write optimized database queries to instantly resolve raw champion and item IDs into readable semantic tags.

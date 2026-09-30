@@ -26,9 +26,20 @@ export default {
   rules: {
     'new-cap': 'off',
     'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
-    'oxc/no-async-await': 'off',
-    'oxc/no-optional-chaining': 'off',
+    /**
+     * ES3-era guard against a writable `undefined` global; Electron/Node expose it
+     * as a stable, non-writable binding.
+     */
+    'no-undefined': 'off',
     'one-var': ['error', 'never'],
+    'oxc/no-async-await': 'off',
+    /**
+     * Payload documents must be copied, never mutated (prefer-object-spread bans the
+     * assign alternative); the rule's own note allows disabling for copy-on-write.
+     */
+    'oxc/no-map-spread': 'off',
+    'oxc/no-optional-chaining': 'off',
+    'oxc/no-rest-spread-properties': 'off',
     /**
      * A single-promise .catch chain beats try/await/catch in simple cases (bootstrap);
      * the await style remains available where it actually helps.
