@@ -35,7 +35,11 @@ const createWindow = (): BrowserWindow => {
   loadRenderer();
 
   let reloadToken = {};
-  const watcher = fs.watch(WATCH_ROOT, { recursive: true }, () => {
+  const watcher = fs.watch(WATCH_ROOT, { recursive: true }, (_event, filename) => {
+    const [root] = filename?.split(/[\\/]/u) ?? [];
+    if (root === 'data') {
+      return;
+    }
     const token = {};
     reloadToken = token;
     setTimeout(() => {
@@ -49,12 +53,20 @@ const createWindow = (): BrowserWindow => {
   return window;
 };
 
-app
-  .whenReady()
-  .then(() => {
-    startBackend();
-    return createWindow();
-  })
-  .catch(console.error);
+const stop = await startBackend();
+const quit = (): void => app.quit();
 
-app.on('window-all-closed', () => app.quit());
+// Before-quit fires on every app.quit() path (direct quits skip window-all-closed); preventDefault defers termination until the database lock is released.
+app.once('before-quit', event => {
+  event.preventDefault();
+  stop().finally(quit).catch(console.error);
+});
+app.on('window-all-closed', quit);
+app
+  /**
+   * Ready fires only after the entry module finishes evaluating, so awaiting it at top level would deadlock.
+   * The window is therefore created from the resolved promise instead.
+   */
+  .whenReady()
+  .then(() => createWindow())
+  .catch(console.error);

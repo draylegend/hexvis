@@ -11,7 +11,7 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "bun build apps/app/electron/main.ts --target=node --format=cjs --packages=external --outfile dist/electron/main.cjs",
+          "bun build apps/app/electron/main.ts --target=node --format=esm --packages=external --outfile dist/electron/main.mjs",
           "bun build apps/app/electron/preload.ts --target=node --format=cjs --packages=external --outfile dist/electron/preload.cjs"
         ],
         "parallel": false
@@ -61,12 +61,15 @@
       "dependsOn": ["build-electron"],
       "options": {
         "parallel": true,
-        "commands": ["bunx nx run app:build:development --watch", "electron dist/electron/main.cjs"]
+        "commands": ["bunx nx run app:build:development --watch", "electron dist/electron/main.mjs"]
       }
     },
     "test": {
       "executor": "@angular/build:unit-test",
-      "options": { "watch": false }
+      "options": {
+        "watch": false,
+        "include": ["**/*.spec.ts", "**/*.test.ts", "../electron/**/*.spec.ts"]
+      }
     },
     "serve-static": {
       "continuous": true,

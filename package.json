@@ -38,6 +38,7 @@
     "@nx/web": "23.2.1",
     "@nx/workspace": "23.2.1",
     "@schematics/angular": "22.2.0",
+    "@surrealdb/node": "2.6.1",
     "@swc/helpers": "0.5.23",
     "electron": "44.4.5",
     "happy-dom": "20.14.5",
@@ -46,6 +47,7 @@
     "oxfmt": "0.70.0",
     "oxlint": "1.85.0",
     "oxlint-tsgolint": "7.0.2003",
+    "surrealdb": "2.0.8",
     "tslib": "2.8.1",
     "typescript": "6.0.3",
     "vitest": "5.0.2"
