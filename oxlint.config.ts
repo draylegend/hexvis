@@ -41,6 +41,11 @@ export default {
     'oxc/no-optional-chaining': 'off',
     'oxc/no-rest-spread-properties': 'off',
     /**
+     * The Promise constructor is standard ES2015; the rule's own docs sanction
+     * disabling it — its suggested alternative, util.promisify, is equally standard.
+     */
+    'promise/avoid-new': 'off',
+    /**
      * A single-promise .catch chain beats try/await/catch in simple cases (bootstrap);
      * the await style remains available where it actually helps.
      */
@@ -59,6 +64,11 @@ export default {
      * DOM fields) but only read them.
      */
     'typescript/prefer-readonly-parameter-types': 'off',
+    /**
+     * TypeScript intentionally allows value-returning functions in void positions;
+     * banning it misfires on Node's documented util.promisify(execFile) pattern.
+     */
+    'typescript/strict-void-return': 'off',
     'unicorn/prefer-top-level-await': 'off',
     /**
      * Off at base because it misfires on non-test bootstrap code (main.ts);
