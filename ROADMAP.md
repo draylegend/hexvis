@@ -36,7 +36,7 @@ _Goal: Automatically fetch, translate, and populate the local database with offi
 
 _Goal: Monitor game client states to automate queue acceptances, blocks, and choices filtered by role preferences._
 
-- [ ] **Step 3.1** `feat(lcu): implement automatic background credentials sniffing for local game instance`
+- [x] **Step 3.1** `feat(lcu): implement automatic background credentials sniffing for local game instance`
   - Programmatically extract active client port keys and authentication tokens directly from local system layers.
 - [ ] **Step 3.2** `feat(automation): deploy automated match readiness check validation loop`
   - Capture client invitation events and instantly broadcast acceptance payloads back to the game engine.
