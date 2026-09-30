@@ -1,3 +1,5 @@
+import { isRecord } from '@hexvis/utils';
+
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
 const FIRST_INDEX = 0;
 export const VERSIONS_URL = `${DDRAGON}/api/versions.json`;
@@ -6,9 +8,6 @@ export interface Assets {
   champions: unknown[];
   items: unknown[];
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
 
 /**
  * Narrows the versions.json payload to a non-empty string array.

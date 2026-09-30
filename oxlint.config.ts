@@ -24,6 +24,13 @@ export default {
    * Disabled rules conflict with Angular/TS conventions or repo rules (AGENTS.md).
    */
   rules: {
+    /**
+     * Redundant under typeCheck: true — TS2454 reports reads before assignment
+     * (type-aware, unlike this syntactic rule) and no-unassigned-vars covers the
+     * never-assigned case; keeping it would only force no-op `= undefined` onto
+     * declarations whose type already includes undefined.
+     */
+    'init-declarations': 'off',
     'new-cap': 'off',
     'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
     /**
@@ -65,6 +72,13 @@ export default {
      */
     'typescript/prefer-readonly-parameter-types': 'off',
     /**
+     * Conflicts with `require-await` and `return-await` (never) on Promise-constructor
+     * wrappers: the fixer injects `async`, which then has no `await` to satisfy
+     * require-await and may not `return await` — leaving a redundant local as the
+     * only compliant shape.
+     */
+    'typescript/promise-function-async': 'off',
+    /**
      * TypeScript intentionally allows value-returning functions in void positions;
      * banning it misfires on Node's documented util.promisify(execFile) pattern.
      */
@@ -81,7 +95,6 @@ export default {
     {
       files: ['*.spec.ts', '*.test.ts'],
       rules: {
-        'init-declarations': 'off',
         'no-unsafe-assignment': 'off',
         'one-var': 'off',
         'vitest/consistent-test-filename': 'off',

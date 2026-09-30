@@ -1,3 +1,4 @@
+import { scheduleRetry } from '@hexvis/utils';
 import { BrowserWindow, app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,10 +28,10 @@ const createWindow = (): BrowserWindow => {
       return;
     }
     if (!fs.existsSync(RENDERER_INDEX)) {
-      setTimeout(loadRenderer, RETRY_DELAY_MS);
+      scheduleRetry(loadRenderer, RETRY_DELAY_MS);
       return;
     }
-    window.loadFile(RENDERER_INDEX).catch(() => setTimeout(loadRenderer, RETRY_DELAY_MS));
+    window.loadFile(RENDERER_INDEX).catch(() => scheduleRetry(loadRenderer, RETRY_DELAY_MS));
   };
   loadRenderer();
 
