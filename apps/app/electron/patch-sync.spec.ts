@@ -44,6 +44,18 @@ const stubDdragon = (): DdragonStub => {
   return { fetch: fetchImpl, calls, updateTo };
 };
 
+/**
+ * Expected fetch sequence for a full sync: index, then both assets.
+ *
+ * @param {string} version Patch version under test.
+ * @returns {string[]} Ordered URLs the stub must have received.
+ */
+const assetCalls = (version: string): string[] => [
+  VERSIONS_URL,
+  cdnUrl(version, 'champion'),
+  cdnUrl(version, 'item'),
+];
+
 // surrealkv:// only supports cwd-relative paths on Windows: `C:` parses as URL host
 // (creates a stray `C/` tree), triple-slash hangs, backslashes throw ERR_INVALID_URL.
 const tempDir = (): string => {
@@ -72,11 +84,7 @@ describe('patch sync', () => {
   it('populates a fresh patch', async () => {
     await db.connect(url, { namespace: 'hexvis', database: 'test' });
     await syncPatchAssets();
-    expect(stub.calls).toStrictEqual([
-      VERSIONS_URL,
-      cdnUrl('1.2.3', 'champion'),
-      cdnUrl('1.2.3', 'item'),
-    ]);
+    expect(stub.calls).toStrictEqual(assetCalls('1.2.3'));
     const [champions] = await db.query<[{ name: string }[]]>('SELECT name FROM champion:Aatrox');
     expect(champions).toStrictEqual([expect.objectContaining({ name: 'Aatrox' })]);
     const [items] = await db.query<[{ name: string }[]]>('SELECT name FROM item');
@@ -87,12 +95,7 @@ describe('patch sync', () => {
     await db.connect(url, { namespace: 'hexvis', database: 'test' });
     await syncPatchAssets();
     await syncPatchAssets();
-    expect(stub.calls).toStrictEqual([
-      VERSIONS_URL,
-      cdnUrl('1.2.3', 'champion'),
-      cdnUrl('1.2.3', 'item'),
-      VERSIONS_URL,
-    ]);
+    expect(stub.calls).toStrictEqual([...assetCalls('1.2.3'), VERSIONS_URL]);
   });
 
   it('replaces stale assets when the patch updates', async () => {
