@@ -1,4 +1,15 @@
+# Pass 1 — format: normalize style everywhere so formatting never blocks a commit.
 bunx nx format:write --all
+# Pass 2 — autofix unused variables only: -A all disables all 555 rules, -D re-enables
+# just no-unused-vars, --fix-suggestions applies its safe suggestion-grade fixes.
 bunx oxlint . -A all -D no-unused-vars --fix-suggestions
+# Pass 3 — autofix import order only. Needs its own config file because CLI -D drops
+# rule options (declaration sort would fire despite the root config) and oxlint rejects
+# two config files in one directory. --fix-dangerously: sort fixes are classified unsafe,
+# so the rule scope here keeps that danger limited to imports.
 bunx oxlint . --config .husky/oxlint.hook.config.ts --fix-dangerously
+# Pass 4 — verify: run the full root oxlint.config.ts ruleset without fixing anything;
+# any remaining error exits non-zero and blocks the commit.
+bunx oxlint .
+# Re-stage the files passes 2-3 changed; commitlint checks the message via commit-msg.
 git add -u

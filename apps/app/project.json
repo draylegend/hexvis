@@ -68,6 +68,7 @@
       "executor": "@angular/build:unit-test",
       "options": {
         "watch": false,
+        "isolate": true,
         "include": ["**/*.spec.ts", "**/*.test.ts", "../electron/**/*.spec.ts"]
       }
     },
