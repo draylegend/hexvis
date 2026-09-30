@@ -16,6 +16,8 @@
     "skipLibCheck": true,
     "target": "ES2025",
     "verbatimModuleSyntax": true,
-    "paths": {}
+    "paths": {
+      "@hexvis/utils": ["./libs/utils/src/index.ts"]
+    }
   }
 }

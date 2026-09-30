@@ -38,7 +38,7 @@ _Goal: Monitor game client states to automate queue acceptances, blocks, and cho
 
 - [x] **Step 3.1** `feat(lcu): implement automatic background credentials sniffing for local game instance`
   - Programmatically extract active client port keys and authentication tokens directly from local system layers.
-- [ ] **Step 3.2** `feat(automation): deploy automated match readiness check validation loop`
+- [x] **Step 3.2** `feat(automation): deploy automated match readiness check validation loop`
   - Capture client invitation events and instantly broadcast acceptance payloads back to the game engine.
 - [ ] **Step 3.3** `feat(automation): integrate dynamic lane-based pick and ban execution triggers`
   - Map active lobby states to favorite arrays stored inside the database, sending lock signals for the active position.
