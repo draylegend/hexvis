@@ -1,5 +1,7 @@
 export { isRecord } from './lib/is-record';
 export { isOk, UNKNOWN_STATUS } from './lib/http-status';
+export { parseJsonApiEvent, requestLcu, watchJsonApiEvents } from './lib/lcu';
 export { parseJson } from './lib/parse-json';
 export { scheduleRetry } from './lib/schedule-retry';
 export { toText } from './lib/to-text';
+export type { JsonApiEvent, LcuCredentials, LcuMutation } from './lib/lcu';
