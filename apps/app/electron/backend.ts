@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
 
+import { watchChampSelect } from './champ-select';
 import db from './database';
 import { CHANNELS } from './ipc';
 import { syncPatchAssets } from './patch-sync';
@@ -14,9 +15,11 @@ export const startBackend = async (): Promise<() => Promise<true>> => {
   ipcMain.handle(CHANNELS.ping, () => 'pong');
   console.info('backend: database connected');
   const stopReadyCheck = watchReadyCheck();
+  const stopChampSelect = watchChampSelect();
   await syncPatchAssets().catch(console.error);
   return () => {
     stopReadyCheck();
+    stopChampSelect();
     return db.close();
   };
 };

@@ -1,3 +1,5 @@
+import type { LcuCredentials } from '@hexvis/utils';
+
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -6,11 +8,6 @@ const CIM_INSTANCE = `Get-CimInstance Win32_Process -Filter "Name='LeagueClientU
 const PORT_PATTERN = /--app-port=(?<port>\d+)/u;
 const TOKEN_PATTERN = /--remoting-auth-token=(?<token>[\w-]+)/u;
 const runExecFile = promisify(execFile);
-
-export interface LcuCredentials {
-  port: number;
-  token: string;
-}
 
 /**
  * Extracts the LCU port and remoting token from a LeagueClientUx command line.

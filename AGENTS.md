@@ -49,3 +49,4 @@ Description in `./README.md`.
 - **Shortest working diff** — deletion over addition, boring over clever, fewest files.
 - **Never simplify away** — validation at trust boundaries (LCU API, Live Client API port 2999, Electron IPC), error handling that prevents data loss (rune pages), security, accessibility.
 - **Non-trivial logic leaves one test** — the smallest thing that fails if it breaks; trivial one-liners need none.
+- **One concern per file** — never mix a feature's main flow with its utility functions (parsing, narrowing, selection). A file combining both and passing ~150 lines must be split: the flow stays, helpers move to a sibling domain file (`champ-select-turn.ts`); helpers shared by several features go to `@hexvis/utils`.
