@@ -15,7 +15,7 @@ Description in `./README.md`.
 - **Concise issue title** — lower case, only simple and minimal issue titles so branch names are short as well.
 - **Remove local branch after successful PR merge/squash/etc**.
 - **No commits without explicit user review** — present a compliant commit message as plain, copyable text at the very end of your response. The user will review the changes in the IDE source control and commit them. Sometimes you'll be allowed to commit and push.
-- **Commit format** — strictly follow the Conventional Commits specification (`feat(tracker): ...`, `fix(overlay): ...`). The commit message must be automatically suggested by the agent after each implemented code block at the very end of your response: one header line, then a body of concise bullet points (`- ...`), each bullet ≤100 chars.
+- **Commit format** — strictly follow the Conventional Commits specification (`feat(tracker): ...`, `fix(overlay): ...`). The commit message must be automatically suggested by the agent after each implemented code block at the very end of your response: one header line, then a body of concise bullet points (`- ...`), each bullet ≤100 chars. No trailers (`Co-Authored-By`, AI attribution) in commit messages or PR bodies.
 - **Roadmap execution** — you are prohibited from modifying `roadmap.md`. Marking milestones and checking off steps `[x]` is strictly reserved for human developers during review.
 - **No new dependencies** (npm packages, CLIs, tools) without explicit approval.
 - **No destructive operations** — don't reset, revert, or delete user work; ask first.
