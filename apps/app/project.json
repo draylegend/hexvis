@@ -9,14 +9,14 @@
     "build-electron": {
       "cache": true,
       "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/electron"],
       "options": {
         "commands": [
           "bun build apps/app/electron/main.ts --target=node --format=esm --packages=external --outfile dist/electron/main.mjs",
           "bun build apps/app/electron/preload.ts --target=node --format=cjs --packages=external --outfile dist/electron/preload.cjs"
         ],
         "parallel": false
-      },
-      "outputs": ["{workspaceRoot}/dist/electron"]
+      }
     },
     "build": {
       "executor": "@angular/build:application",
@@ -27,7 +27,12 @@
         "outputPath": "dist/apps/app",
         "browser": "apps/app/src/main.ts",
         "tsConfig": "apps/app/tsconfig.app.json",
-        "assets": [{ "glob": "**/*", "input": "apps/app/public" }],
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/app/public"
+          }
+        ],
         "styles": ["apps/app/src/styles.css"],
         "baseHref": "./"
       },
@@ -83,7 +88,11 @@
         "port": 4200,
         "staticFilePath": "dist/apps/app/browser",
         "spa": true
-      }
+      },
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": ["build"]
     }
   }
 }
