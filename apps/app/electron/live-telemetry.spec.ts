@@ -21,12 +21,14 @@ const payload = (overrides: Record<string, unknown>): Record<string, unknown> =>
   allPlayers: [
     {
       items: [{ itemID: DORANS_BLADE }, { itemID: HEALTH_POTION }, { itemID: '3006' }],
+      position: 'TOP',
       rawChampionName: 'Character_Aatrox_Name',
       riotId: '#',
       team: 'ORDER',
     },
     {
       items: [],
+      position: 'UTILITY',
       rawChampionName: 'game_character_displayname_DrMundo',
       riotId: 'me#EUW',
       team: 'CHAOS',
@@ -59,8 +61,14 @@ describe('live telemetry', () => {
       ],
       gameTime: GAME_TIME,
       players: [
-        { champion: 'Aatrox', items: [DORANS_BLADE, HEALTH_POTION], riotId: '#', team: 'ORDER' },
-        { champion: 'DrMundo', items: [], riotId: 'me#EUW', team: 'CHAOS' },
+        {
+          champion: 'Aatrox',
+          items: [DORANS_BLADE, HEALTH_POTION],
+          position: 'TOP',
+          riotId: '#',
+          team: 'ORDER',
+        },
+        { champion: 'DrMundo', items: [], position: 'UTILITY', riotId: 'me#EUW', team: 'CHAOS' },
       ],
     });
   });

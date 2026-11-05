@@ -25,6 +25,8 @@ export interface LivePlayer {
   champion: string;
   /** Hidden players report `#`; only the local player is identifiable. */
   riotId: string;
+  /** `TOP`, `JUNGLE`, `MIDDLE`, `BOTTOM`, `UTILITY`; empty outside role queues. */
+  position: string;
   team: string;
   items: number[];
 }
@@ -102,16 +104,21 @@ const readActivePlayer = (value: unknown): ActivePlayer | undefined => {
  * @returns {LivePlayer | undefined} Player, undefined when champion, riotId or team is missing.
  */
 const readPlayer = (value: Record<string, unknown>): LivePlayer | undefined => {
-  const { rawChampionName, riotId, team } = value;
+  const { position, rawChampionName, riotId, team } = value;
   const champion =
     typeof rawChampionName === 'string' && CHAMPION_PATTERN.exec(rawChampionName)?.groups?.['id'];
-  if (typeof champion !== 'string' || typeof riotId !== 'string' || typeof team !== 'string') {
+  if (
+    typeof champion !== 'string' ||
+    typeof riotId !== 'string' ||
+    typeof position !== 'string' ||
+    typeof team !== 'string'
+  ) {
     return undefined;
   }
   const items = records(value['items'])
     .map(item => item['itemID'])
     .filter((id: unknown): id is number => Number.isInteger(id));
-  return { champion, riotId, team, items };
+  return { champion, riotId, position, team, items };
 };
 
 /**
