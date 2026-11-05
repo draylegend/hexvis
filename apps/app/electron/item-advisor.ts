@@ -1,37 +1,29 @@
 import type { LivePlayer, LiveSnapshot } from './live-telemetry';
 
 import db from './database';
+import { type Catalog, type CatalogItem, loadCatalog } from './item-catalog';
 
-const SUMMONERS_RIFT = '11';
-const COMPLETED_DEPTH = 3;
-// Six-digit ids duplicate four-digit shop items as mode variants.
-const MAX_SHOP_ID = 9999;
 const SUGGESTION_COUNT = 3;
+const CORE_COUNT = 2;
+const WILSON_Z = 1.96;
 const RESIST_SCALE = 100;
 const WHOLE = 1;
+const TWO = 2;
+const FOUR = 4;
 const NONE = 0;
 const EVEN_SHARE = 0.5;
 
-/** Data Dragon item reduced to what the advisor reads. */
-interface CatalogItem {
-  id: number;
-  name: string;
-  gold: number;
-  stats: Record<string, number>;
-  boots: boolean;
-  candidate: boolean;
+/** Collected games and wins of one item on one champion and position. */
+export interface ItemStat {
+  item: number;
+  games: number;
+  wins: number;
 }
 
-/** Data Dragon champion ratings (0..10) used before enemies own items. */
-interface ChampionInfo {
-  attack: number;
-  magic: number;
-}
-
-/** Stored patch data the advisor ranks against. */
-interface Catalog {
-  items: Map<number, CatalogItem>;
-  champions: Map<string, ChampionInfo>;
+/** Pool item with its win-rate lower bound. */
+interface RankedItem {
+  item: CatalogItem;
+  score: number;
 }
 
 /** Defensive state of the local player against the enemy damage mix. */
@@ -39,26 +31,7 @@ interface Profile {
   health: number;
   armor: number;
   magicResist: number;
-  owned: number[];
   physical: number;
-}
-
-interface ItemRow {
-  id: string;
-  name: string;
-  gold: { total: number; purchasable: boolean };
-  stats: Record<string, number>;
-  tags: string[];
-  maps: Record<string, boolean>;
-  into?: string[];
-  depth?: number;
-  inStore?: boolean;
-  requiredChampion?: string;
-}
-
-interface ChampionRow {
-  id: string;
-  info: ChampionInfo;
 }
 
 const stat = (item: CatalogItem | undefined, name: string): number => item?.stats[name] ?? NONE;
@@ -80,31 +53,6 @@ const share = (part: number, other: number): number | undefined => {
 };
 
 /**
- * Whether the shop sells the item as a finished Summoner's Rift buy: completed
- * (no upgrade path), not a starter, not champion-locked, not a mode variant.
- *
- * @param {ItemRow} row Stored Data Dragon item.
- * @returns {boolean} True when the item may be suggested.
- */
-const isCandidate = (row: ItemRow): boolean =>
-  row.maps[SUMMONERS_RIFT] === true &&
-  row.gold.purchasable &&
-  row.inStore !== false &&
-  row.into === undefined &&
-  (row.depth ?? NONE) >= COMPLETED_DEPTH &&
-  row.requiredChampion === undefined &&
-  Number(row.id) <= MAX_SHOP_ID;
-
-const toCatalogItem = (row: ItemRow): CatalogItem => ({
-  id: Number(row.id),
-  name: row.name,
-  gold: row.gold.total,
-  stats: row.stats,
-  boots: row.tags.includes('Boots'),
-  candidate: isCandidate(row),
-});
-
-/**
  * Share of physical damage the enemy team deals: their item AD against item AP,
  * or their champion ratings while no damage item is owned yet.
  *
@@ -114,7 +62,7 @@ const toCatalogItem = (row: ItemRow): CatalogItem => ({
  */
 const physicalShare = (enemies: LivePlayer[], catalog: Catalog): number => {
   const owned = enemies.flatMap(enemy => enemy.items.map(id => catalog.items.get(id)));
-  const ratings = enemies.flatMap(enemy => catalog.champions.get(enemy.champion) ?? []);
+  const ratings = enemies.flatMap(enemy => catalog.champions.get(enemy.champion)?.info ?? []);
   return (
     share(
       sum(owned.map(item => stat(item, 'FlatPhysicalDamageMod'))),
@@ -138,79 +86,169 @@ const effectiveHealth = (profile: Profile): number =>
     (WHOLE - profile.physical) / (WHOLE + profile.magicResist / RESIST_SCALE));
 
 /**
- * Ranks candidate items by effective-health gain per gold against the enemy
- * damage mix; owned items and a second pair of boots are skipped.
+ * Effective-health gain per gold one item adds against the enemy damage mix.
  *
- * @param {CatalogItem[]} catalog Every stored item.
+ * @param {CatalogItem} item Candidate item.
  * @param {Profile} profile Defensive state of the player.
- * @returns {CatalogItem[]} Best items first, at most three.
+ * @returns {number} Gain per gold, zero for items without defensive stats.
  */
-const rankDefensiveItems = (catalog: CatalogItem[], profile: Profile): CatalogItem[] => {
-  const hasBoots = catalog.some(item => item.boots && profile.owned.includes(item.id));
-  const base = effectiveHealth(profile);
-  const gain = (item: CatalogItem): number =>
-    (effectiveHealth({
-      ...profile,
-      health: profile.health + stat(item, 'FlatHPPoolMod'),
-      armor: profile.armor + stat(item, 'FlatArmorMod'),
-      magicResist: profile.magicResist + stat(item, 'FlatSpellBlockMod'),
-    }) -
-      base) /
-    item.gold;
-  return catalog
-    .filter(item => item.candidate && !profile.owned.includes(item.id) && !(hasBoots && item.boots))
-    .map(item => ({ item, score: gain(item) }))
-    .filter(entry => entry.score > NONE)
-    .toSorted((left, right) => right.score - left.score)
-    .slice(NONE, SUGGESTION_COUNT)
-    .map(entry => entry.item);
-};
+const defensiveGain = (item: CatalogItem, profile: Profile): number =>
+  (effectiveHealth({
+    ...profile,
+    health: profile.health + stat(item, 'FlatHPPoolMod'),
+    armor: profile.armor + stat(item, 'FlatArmorMod'),
+    magicResist: profile.magicResist + stat(item, 'FlatSpellBlockMod'),
+  }) -
+    effectiveHealth(profile)) /
+  item.gold;
 
 /**
- * Reads the stored patch items and champion ratings.
+ * Lower bound of the 95% Wilson interval of a win rate: few games pull the
+ * bound down, so rare items with lucky win rates do not outrank proven ones.
  *
- * @returns {Promise<Catalog>} Catalog keyed by item id and champion id.
+ * @param {number} wins Games won with the item.
+ * @param {number} games Games finished with the item.
+ * @returns {number} Lower bound in 0..1.
  */
-const loadCatalog = async (): Promise<Catalog> => {
-  const [itemRows, championRows] = await db.query<[ItemRow[], ChampionRow[]]>(
-    `SELECT record::id(id) AS id, name, gold, stats, tags, maps, into, depth, inStore, requiredChampion FROM item;
-SELECT record::id(id) AS id, info FROM champion;`,
-  );
-  return {
-    items: new Map(itemRows.map(row => [Number(row.id), toCatalogItem(row)])),
-    champions: new Map(championRows.map(row => [row.id, row.info])),
-  };
+export const wilsonLowerBound = (wins: number, games: number): number => {
+  const rate = wins / games;
+  const spread = WILSON_Z * WILSON_Z;
+  const margin = WILSON_Z * Math.sqrt((rate * (WHOLE - rate) + spread / (FOUR * games)) / games);
+  return (rate + spread / (TWO * games) - margin) / (WHOLE + spread / games);
 };
 
 /**
- * Top defensive items for the local player of one snapshot.
+ * Buyable pool items ranked by win-rate lower bound: completed shop items, not
+ * owned, no second pair of boots; the bound itself discounts small samples.
+ *
+ * @param {ItemStat[]} pool Stats of the champion and position.
+ * @param {Map<number, CatalogItem>} items Catalog by item id.
+ * @param {number[]} owned Item ids in the player's inventory.
+ * @returns {RankedItem[]} Best lower bound first.
+ */
+const rankPool = (
+  pool: ItemStat[],
+  items: Map<number, CatalogItem>,
+  owned: number[],
+): RankedItem[] => {
+  const hasBoots = owned.some(id => items.get(id)?.boots === true);
+  return pool
+    .filter(row => !owned.includes(row.item))
+    .flatMap(row => {
+      const item = items.get(row.item);
+      if (item === undefined || !item.candidate || (hasBoots && item.boots)) {
+        return [];
+      }
+      return [{ item, score: wilsonLowerBound(row.wins, row.games) }];
+    })
+    .toSorted((left, right) => right.score - left.score);
+};
+
+/**
+ * Picks the suggestions from a champion's ranked pool: the two items with the
+ * best win-rate lower bound as the core, then the pool item that best covers
+ * the enemy damage mix (the next ranked item when none adds defense).
+ *
+ * @param {RankedItem[]} ranked Buyable pool items, best lower bound first.
+ * @param {Profile} profile Defensive state of the player.
+ * @returns {CatalogItem[]} Suggestions, at most three.
+ */
+const pickItems = (ranked: RankedItem[], profile: Profile): CatalogItem[] => {
+  const core = ranked.slice(NONE, CORE_COUNT).map(entry => entry.item);
+  const rest = ranked.slice(CORE_COUNT).map(entry => entry.item);
+  const fit = rest
+    .map(item => ({ item, gain: defensiveGain(item, profile) }))
+    .filter(entry => entry.gain > NONE)
+    .toSorted((left, right) => right.gain - left.gain)
+    .map(entry => entry.item);
+  return [...new Set([...core, ...fit, ...rest])].slice(NONE, SUGGESTION_COUNT);
+};
+
+/**
+ * Item statistics of the player's champion and position in the stored patch;
+ * while the champion has none yet, the items of every champion on the position.
+ *
+ * @param {Catalog} catalog Stored patch data.
+ * @param {LivePlayer} me The local player's entry.
+ * @returns {Promise<ItemStat[]>} Stats per item, empty only before any collection.
+ */
+const loadPool = async (catalog: Catalog, me: LivePlayer): Promise<ItemStat[]> => {
+  const [own, position] = await db.query<[ItemStat[], ItemStat[]]>(
+    `SELECT item, games, wins FROM item_stat WHERE patch = $patch AND champion = $champion AND position = $position;
+SELECT item, math::sum(games) AS games, math::sum(wins) AS wins FROM item_stat
+  WHERE patch = $patch AND position = $position GROUP BY item;`,
+    {
+      patch: catalog.patch,
+      champion: catalog.champions.get(me.champion)?.key,
+      position: me.position,
+    },
+  );
+  if (own.length > NONE) {
+    return own;
+  }
+  return position;
+};
+
+/**
+ * Suggestions for the local player of one snapshot.
  *
  * @param {LiveSnapshot} snapshot Validated match telemetry.
  * @param {LivePlayer} me The local player's entry in the snapshot.
- * @param {Catalog} catalog Stored patch data.
- * @returns {CatalogItem[]} Best items first, at most three.
+ * @param {{ catalog: Catalog; pool: ItemStat[] }} data Stored patch data and the player's pool.
+ * @returns {CatalogItem[]} Suggestions, at most three.
  */
-const suggest = (snapshot: LiveSnapshot, me: LivePlayer, catalog: Catalog): CatalogItem[] => {
+const suggest = (
+  snapshot: LiveSnapshot,
+  me: LivePlayer,
+  data: { catalog: Catalog; pool: ItemStat[] },
+): CatalogItem[] => {
   const stats = snapshot.activePlayer.championStats;
   const enemies = snapshot.players.filter(player => player.team !== me.team);
-  return rankDefensiveItems([...catalog.items.values()], {
+  return pickItems(rankPool(data.pool, data.catalog.items, me.items), {
     health: stats['maxHealth'] ?? NONE,
     armor: stats['armor'] ?? NONE,
     magicResist: stats['magicResist'] ?? NONE,
-    owned: me.items,
-    physical: physicalShare(enemies, catalog),
+    physical: physicalShare(enemies, data.catalog),
   });
 };
 
 /**
- * Creates the snapshot handler that ranks defensive items on every snapshot (an
- * in-memory pass over the catalog) and logs them only when the top three change.
- * The catalog loads once on first use; a failed load is retried with the next snapshot.
+ * Creates a pool reader that loads the champion and position statistics once
+ * per match: a new champion, position or a game clock that ran backwards (next
+ * match) reloads them, so statistics collected meanwhile are picked up.
+ *
+ * @returns {function(Catalog, LivePlayer, number): Promise<ItemStat[]>} Pool reader.
+ */
+const createPoolReader = (): ((
+  catalog: Catalog,
+  me: LivePlayer,
+  gameTime: number,
+) => Promise<ItemStat[]>) => {
+  let pool: ItemStat[] = [];
+  let loadedFor = '';
+  let lastTime = NONE;
+  return async (catalog: Catalog, me: LivePlayer, gameTime: number): Promise<ItemStat[]> => {
+    const key = `${me.champion} ${me.position}`;
+    if (key !== loadedFor || gameTime < lastTime) {
+      pool = await loadPool(catalog, me);
+      loadedFor = key;
+    }
+    lastTime = gameTime;
+    return pool;
+  };
+};
+
+/**
+ * Creates the snapshot handler that suggests items from the collected ranked
+ * statistics of the player's champion and position, fitted to the enemy damage
+ * mix, and logs them only when they change. The catalog loads once and the pool
+ * once per match; failed loads retry with the next snapshot.
  *
  * @returns {function(LiveSnapshot): Promise<void>} Handler for one snapshot.
  */
 export const createItemAdvisor = (): ((snapshot: LiveSnapshot) => Promise<void>) => {
   let catalog: Catalog | undefined;
+  const readPool = createPoolReader();
   let last = '';
   return async (snapshot: LiveSnapshot): Promise<void> => {
     const me = snapshot.players.find(player => player.riotId === snapshot.activePlayer.riotId);
@@ -218,12 +256,12 @@ export const createItemAdvisor = (): ((snapshot: LiveSnapshot) => Promise<void>)
       return;
     }
     catalog ??= await loadCatalog();
-    const names = suggest(snapshot, me, catalog)
-      .map(item => item.name)
-      .join(', ');
-    if (names !== last) {
-      last = names;
-      console.info(`advisor: ${names}`);
+    const pool = await readPool(catalog, me, snapshot.gameTime);
+    const names = suggest(snapshot, me, { catalog, pool }).map(item => item.name);
+    const line = names.join(', ') || `no statistics for ${me.champion} ${me.position} yet`;
+    if (line !== last) {
+      last = line;
+      console.info(`advisor: ${line}`);
     }
   };
 };

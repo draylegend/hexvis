@@ -61,7 +61,10 @@
       "dependsOn": ["build-electron"],
       "options": {
         "parallel": true,
-        "commands": ["bunx nx run app:build:development --watch", "electron dist/electron/main.mjs"]
+        "commands": [
+          "bunx nx run app:build:development --watch",
+          "op run --env-file=.env -- electron dist/electron/main.mjs"
+        ]
       }
     },
     "test": {
