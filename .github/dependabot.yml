@@ -9,3 +9,8 @@ updates:
     directory: '/' # Location of package manifests
     schedule:
       interval: 'weekly'
+    ignore:
+      # @angular/compiler-cli and @angular/build peer typescript >=6.0 <6.1;
+      # typescript 7 ships no tsserver or JS API. Lift once Angular supports it.
+      - dependency-name: 'typescript'
+        versions: ['>=6.1']
