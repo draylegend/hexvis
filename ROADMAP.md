@@ -42,17 +42,23 @@ _Goal: Monitor game client states to automate queue acceptances, blocks, and cho
   - Capture client invitation events and instantly broadcast acceptance payloads back to the game engine.
 - [ ] **Step 3.3** `feat(automation): integrate dynamic lane-based pick and ban execution triggers`
   - Map active lobby states to favorite arrays stored inside the database, sending lock signals for the active position.
+- [ ] **Step 3.4** `feat(automation): apply client-recommended runes and summoner spells in champion select`
+  - Read the client's recommended pages for the locked champion and position, write them to an app-created rune page and set the summoner spells.
 
 ### 📍 Milestone 4: Live-Match Data Ingestion & Strategic Engine Link
 
-_Goal: Poll live game data matrices, enrich them via semantic RAG, and query the local execution layer._
+_Goal: Poll live game data, suggest items from ranked match statistics and patch data, and query the local execution layer for fuzzy decisions._
 
 - [ ] **Step 4.1** `feat(live): implement live game telemetry collector on local port 2999`
   - Create a high-frequency polling loop targeting active player statistics, current inventories, and live event arrays.
-- [ ] **Step 4.2** `feat(rag): code the composite prompt assembly engine combining database facts and telemetry`
-  - Join raw match measurements with patch item descriptions from the database into unified tactical context payloads.
-- [ ] **Step 4.3** `feat(engine): connect backend orchestration loop to local engine classification layer`
-  - Post the formatted context data to the local single-forward-pass API and handle the structural response matrices.
+- [ ] **Step 4.2** `feat(advisor): compute defensive item suggestions from enemy damage profile`
+  - Split teams via `riotId`, derive the enemy AD/AP share from their item stats (champion `info` before items), rank completed items by effective-health gain per gold, top 3, reported when they change.
+- [ ] **Step 4.3** `feat(stats): collect ranked item statistics via riot match api`
+  - Sample Emerald+ ranked matches of the current patch within personal key rate limits, store completed items and wins per champion and position in the database.
+- [ ] **Step 4.4** `feat(advisor): rank item candidates by win-rate lower bound`
+  - Limit suggestions to items built on the champion and position, ordered by Wilson lower bound, with the defensive calculation picking the fit against current enemies.
+- [ ] **Step 4.5** `feat(engine): connect advisor to local engine classification layer`
+  - Post compact match state to the local single-forward-pass API for decisions the calculation cannot cover; measure accuracy before relying on it.
 
 ### 📍 Milestone 5: Control Dashboard & Transparent Overlay Interface
 

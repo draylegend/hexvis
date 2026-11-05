@@ -4,7 +4,7 @@
 services:
   engine:
     build:
-      context: https://github.com/NandhaKishorM/laya.git#v0.3.21
+      context: https://github.com/NandhaKishorM/laya.git#v0.4.22
     command: ['laya-serve']
     container_name: hv-engine
     ports:

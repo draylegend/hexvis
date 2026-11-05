@@ -1,7 +1,7 @@
 import { readSnapshot } from './live-telemetry';
 
-// Allgamedata payload trimmed to the fields the collector reads. Field names as
-// Documented by Riot (/liveclientdata/allgamedata) and Overwolf's live_client_data samples.
+// Allgamedata payload trimmed to the fields the collector reads, shaped like a captured
+// Summoner's Rift response: hidden players report riotId '#', both raw name formats occur.
 const GAME_TIME = 754.2;
 const LEVEL = 9;
 const GOLD = 1250.5;
@@ -16,14 +16,22 @@ const payload = (overrides: Record<string, unknown>): Record<string, unknown> =>
     championStats: { attackDamage: ATTACK_DAMAGE, resourceType: 'MANA' },
     currentGold: GOLD,
     level: LEVEL,
+    riotId: 'me#EUW',
   },
   allPlayers: [
     {
-      championName: 'Garen',
       items: [{ itemID: DORANS_BLADE }, { itemID: HEALTH_POTION }, { itemID: '3006' }],
+      rawChampionName: 'Character_Aatrox_Name',
+      riotId: '#',
       team: 'ORDER',
     },
-    { championName: 'Ahri', team: 42 },
+    {
+      items: [],
+      rawChampionName: 'game_character_displayname_DrMundo',
+      riotId: 'me#EUW',
+      team: 'CHAOS',
+    },
+    { rawChampionName: 'game_character_displayname_Ahri', riotId: '#', team: 42 },
   ],
   events: {
     Events: [
@@ -43,13 +51,17 @@ describe('live telemetry', () => {
         championStats: { attackDamage: ATTACK_DAMAGE },
         currentGold: GOLD,
         level: LEVEL,
+        riotId: 'me#EUW',
       },
       events: [
         { id: 0, name: 'GameStart', time: FIRST_EVENT_TIME },
         { id: 1, name: 'ChampionKill', time: KILL_EVENT_TIME },
       ],
       gameTime: GAME_TIME,
-      players: [{ championName: 'Garen', items: [DORANS_BLADE, HEALTH_POTION], team: 'ORDER' }],
+      players: [
+        { champion: 'Aatrox', items: [DORANS_BLADE, HEALTH_POTION], riotId: '#', team: 'ORDER' },
+        { champion: 'DrMundo', items: [], riotId: 'me#EUW', team: 'CHAOS' },
+      ],
     });
   });
 

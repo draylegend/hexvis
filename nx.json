@@ -13,7 +13,10 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "@angular/build:unit-test": { "cache": true, "inputs": ["default", "^production"] }
+    "@angular/build:unit-test": {
+      "cache": true,
+      "inputs": ["default", "^production"]
+    }
   },
   "plugins": [{ "plugin": "@nx/oxlint", "options": { "targetName": "lint" } }],
   "generators": {
@@ -24,5 +27,6 @@
       "style": "css",
       "unitTestRunner": "vitest-angular"
     }
-  }
+  },
+  "tui": { "enabled": false }
 }

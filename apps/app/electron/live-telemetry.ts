@@ -8,9 +8,12 @@ const POLL_MS = 1000;
 const IDLE_MS = 5000;
 const REQUEST_TIMEOUT_MS = 2000;
 const NO_GAME_CODE = 'ECONNREFUSED';
+// Raw names come as `Character_Aatrox_Name` or `game_character_displayname_DrMundo`.
+const CHAMPION_PATTERN = /(?:Character_|displayname_)(?<id>[A-Za-z]+)/u;
 
 /** Live statistics of the local player. */
 export interface ActivePlayer {
+  riotId: string;
   level: number;
   currentGold: number;
   championStats: Record<string, number>;
@@ -18,7 +21,10 @@ export interface ActivePlayer {
 
 /** One champion in the match with its current inventory. */
 export interface LivePlayer {
-  championName: string;
+  /** Data Dragon champion id, e.g. `DrMundo`. */
+  champion: string;
+  /** Hidden players report `#`; only the local player is identifiable. */
+  riotId: string;
   team: string;
   items: number[];
 }
@@ -37,8 +43,6 @@ export interface LiveSnapshot {
   players: LivePlayer[];
   events: LiveEvent[];
 }
-
-let latest: LiveSnapshot | undefined;
 
 const isNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
@@ -75,10 +79,16 @@ const readStats = (value: unknown): Record<string, number> => {
  * @returns {ActivePlayer | undefined} Statistics, undefined when malformed.
  */
 const readActivePlayer = (value: unknown): ActivePlayer | undefined => {
-  if (!isRecord(value) || !isNumber(value['level']) || !isNumber(value['currentGold'])) {
+  if (
+    !isRecord(value) ||
+    typeof value['riotId'] !== 'string' ||
+    !isNumber(value['level']) ||
+    !isNumber(value['currentGold'])
+  ) {
     return undefined;
   }
   return {
+    riotId: value['riotId'],
     level: value['level'],
     currentGold: value['currentGold'],
     championStats: readStats(value['championStats']),
@@ -89,18 +99,19 @@ const readActivePlayer = (value: unknown): ActivePlayer | undefined => {
  * One champion with its inventory item ids; malformed items are dropped.
  *
  * @param {Record<string, unknown>} value One allPlayers entry.
- * @returns {LivePlayer | undefined} Player, undefined when name or team is missing.
+ * @returns {LivePlayer | undefined} Player, undefined when champion, riotId or team is missing.
  */
 const readPlayer = (value: Record<string, unknown>): LivePlayer | undefined => {
-  const { championName } = value;
-  const { team } = value;
-  if (typeof championName !== 'string' || typeof team !== 'string') {
+  const { rawChampionName, riotId, team } = value;
+  const champion =
+    typeof rawChampionName === 'string' && CHAMPION_PATTERN.exec(rawChampionName)?.groups?.['id'];
+  if (typeof champion !== 'string' || typeof riotId !== 'string' || typeof team !== 'string') {
     return undefined;
   }
   const items = records(value['items'])
     .map(item => item['itemID'])
     .filter((id: unknown): id is number => Number.isInteger(id));
-  return { championName, team, items };
+  return { champion, riotId, team, items };
 };
 
 /**
@@ -189,13 +200,6 @@ const pollSnapshot = async (): Promise<LiveSnapshot | undefined> => {
 };
 
 /**
- * Latest validated telemetry of the running match.
- *
- * @returns {LiveSnapshot | undefined} Snapshot, undefined outside a match.
- */
-export const getLiveTelemetry = (): LiveSnapshot | undefined => latest;
-
-/**
  * Logs match start and end, the only collector events worth a line.
  *
  * @param {LiveSnapshot | undefined} previous Snapshot of the previous poll.
@@ -215,29 +219,32 @@ const logTransition = (
 };
 
 /**
- * Polls the game's live data every second while a match runs and probes at a
- * slower cadence while none does; the returned closure stops polling.
+ * Polls the game's live data every second while a match runs, handing every
+ * snapshot to the handler, and probes at a slower cadence while none does; the
+ * returned closure stops polling.
  *
+ * @param {function(LiveSnapshot): void} onSnapshot Handler for one validated snapshot.
  * @returns {function(): void} Closure stopping the collector.
  */
-export const watchLiveTelemetry = (): (() => void) => {
+export const watchLiveTelemetry = (onSnapshot: (snapshot: LiveSnapshot) => void): (() => void) => {
   let stopped = false;
+  let previous: LiveSnapshot | undefined;
   const poll = async (): Promise<void> => {
     const snapshot = await pollSnapshot();
     if (stopped) {
       return;
     }
-    logTransition(latest, snapshot);
-    latest = snapshot;
+    logTransition(previous, snapshot);
+    previous = snapshot;
     if (snapshot === undefined) {
       scheduleRetry(poll, IDLE_MS);
       return;
     }
+    onSnapshot(snapshot);
     scheduleRetry(poll, POLL_MS);
   };
   poll().catch(console.error);
   return () => {
     stopped = true;
-    latest = undefined;
   };
 };
