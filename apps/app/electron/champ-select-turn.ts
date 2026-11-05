@@ -4,9 +4,19 @@ const CHAMP_SELECT_URI = '/lol-champ-select/v1/session';
 const BAN_TYPE = 'ban';
 const PICK_TYPE = 'pick';
 const NO_CHAMPION = 0;
+const NO_POSITION = 'none';
 
 /** Action kinds the local player's own turn can carry. */
 type ActionType = 'ban' | 'pick';
+
+/** The local player's locked champion and the position its loadout is for. */
+export interface Lock {
+  championId: number;
+  /** Uppercase position as the perks API expects it, `NONE` when unassigned. */
+  position: string;
+  /** Spells in the D and F slots at lock time, the slot order to keep. */
+  spellIds: unknown[];
+}
 
 /** Facts needed to execute one lock: which action, which lane, which pool. */
 export interface Turn {
@@ -58,6 +68,24 @@ const activeAction = (
 };
 
 /**
+ * The local player's team entry.
+ *
+ * @param {Record<string, unknown>} session Champ-select session record.
+ * @param {number} cellId Cell id of the local player.
+ * @returns {Record<string, unknown> | undefined} Team entry, undefined when missing.
+ */
+const ownMember = (
+  session: Record<string, unknown>,
+  cellId: number,
+): Record<string, unknown> | undefined => {
+  const team = session['myTeam'];
+  if (!isRecordList(team)) {
+    return undefined;
+  }
+  return team.find(member => member['cellId'] === cellId);
+};
+
+/**
  * The lane the lobby assigned to the local player; blind pick assigns none.
  *
  * @param {Record<string, unknown>} session Champ-select session record.
@@ -65,12 +93,7 @@ const activeAction = (
  * @returns {string | undefined} Raw assigned position, undefined when unassigned.
  */
 const assignedLane = (session: Record<string, unknown>, cellId: number): string | undefined => {
-  const team = session['myTeam'];
-  if (!isRecordList(team)) {
-    return undefined;
-  }
-  const me = team.find(member => member['cellId'] === cellId);
-  const lane = me?.['assignedPosition'];
+  const lane = ownMember(session, cellId)?.['assignedPosition'];
   if (typeof lane !== 'string' || lane === '') {
     return undefined;
   }
@@ -198,4 +221,72 @@ export const chooseChampion = (
     return favorites.findLast(id => !taken.includes(id));
   }
   return favorites.find(id => !taken.includes(id));
+};
+
+/**
+ * Whether the local player has completed their own pick action.
+ *
+ * @param {Record<string, unknown>} session Champ-select session record.
+ * @param {number} cellId Cell id of the local player.
+ * @returns {boolean} True once the pick is locked in.
+ */
+const hasLockedPick = (session: Record<string, unknown>, cellId: number): boolean => {
+  const rounds = session['actions'];
+  return (
+    isRoundList(rounds) &&
+    rounds
+      .flat()
+      .some(
+        action =>
+          action['actorCellId'] === cellId &&
+          action['type'] === PICK_TYPE &&
+          action['completed'] === true,
+      )
+  );
+};
+
+/**
+ * Reads the local player's locked champion from one champ-select session.
+ *
+ * @param {unknown} session Data of one champ-select session event.
+ * @returns {Lock | undefined} Lock, undefined before the pick is locked or for malformed data.
+ */
+const readLock = (session: unknown): Lock | undefined => {
+  if (!isRecord(session) || typeof session['localPlayerCellId'] !== 'number') {
+    return undefined;
+  }
+  const cellId = session['localPlayerCellId'];
+  const me = ownMember(session, cellId);
+  const championId = me?.['championId'];
+  if (!isChampionId(championId) || !hasLockedPick(session, cellId)) {
+    return undefined;
+  }
+  return {
+    championId,
+    position: (assignedLane(session, cellId) ?? NO_POSITION).toUpperCase(),
+    spellIds: [me?.['spell1Id'], me?.['spell2Id']],
+  };
+};
+
+/**
+ * Creates a frame reader that yields each locked champion once per session:
+ * repeated updates of the same lock yield undefined, and any session update
+ * without a lock re-arms the reader for the next champ select.
+ *
+ * @returns {function(string): (Lock | undefined)} Reader for raw text frames.
+ */
+export const createLockReader = (): ((message: string) => Lock | undefined) => {
+  let handled: number | undefined;
+  return (message: string): Lock | undefined => {
+    const event = parseJsonApiEvent(message);
+    if (event?.uri !== CHAMP_SELECT_URI) {
+      return undefined;
+    }
+    const lock = readLock(event.data);
+    if (lock?.championId === handled) {
+      return undefined;
+    }
+    handled = lock?.championId;
+    return lock;
+  };
 };

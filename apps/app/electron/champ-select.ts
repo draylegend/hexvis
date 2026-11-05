@@ -1,8 +1,15 @@
 import { type LcuCredentials, isOk, requestLcu, watchJsonApiEvents } from '@hexvis/utils';
 
-import { type Turn, championIds, chooseChampion, createTurnReader } from './champ-select-turn';
+import {
+  type Turn,
+  championIds,
+  chooseChampion,
+  createLockReader,
+  createTurnReader,
+} from './champ-select-turn';
 import db from './database';
 import { getLcuCredentials } from './lcu-credentials';
+import { createLoadoutApplier } from './loadout';
 
 const ACTION_PATH = '/lol-champ-select/v1/session/actions';
 
@@ -36,7 +43,7 @@ const lockTurn = async (turn: Turn, credentials: LcuCredentials): Promise<void> 
   if (championId === undefined) {
     return;
   }
-  const status = await requestLcu(credentials, {
+  const { status } = await requestLcu(credentials, {
     method: 'PATCH',
     path: `${ACTION_PATH}/${turn.actionId}`,
     body: JSON.stringify({ championId, completed: true, type: turn.type }),
@@ -52,17 +59,24 @@ const lockTurn = async (turn: Turn, credentials: LcuCredentials): Promise<void> 
  * Subscribes to the local client's champ-select events and executes the pending
  * lock for the assigned lane the moment the client awaits one. Each client
  * action runs once: favorites are read when the turn starts, and a refused lock
- * is left to the player instead of being retried. The returned closure closes
- * the subscription.
+ * is left to the player instead of being retried. Once the player's pick is
+ * locked, the client-recommended runes and summoner spells are applied. The
+ * returned closure closes the subscription.
  *
  * @returns {function(): void} Closure closing the subscription.
  */
 export const watchChampSelect = (): (() => void) => {
   const readNewTurn = createTurnReader();
+  const readNewLock = createLockReader();
+  const applyLoadout = createLoadoutApplier();
   return watchJsonApiEvents(getLcuCredentials, (message, credentials) => {
     const turn = readNewTurn(message);
     if (turn !== undefined) {
       lockTurn(turn, credentials).catch(console.error);
+    }
+    const lock = readNewLock(message);
+    if (lock !== undefined) {
+      applyLoadout(lock, credentials).catch(console.error);
     }
   });
 };

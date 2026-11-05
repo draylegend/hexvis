@@ -1,4 +1,10 @@
-import { type Turn, championIds, chooseChampion, createTurnReader } from './champ-select-turn';
+import {
+  type Turn,
+  championIds,
+  chooseChampion,
+  createLockReader,
+  createTurnReader,
+} from './champ-select-turn';
 
 // Real champ-select frames as documented by hextechdocs. Every session change
 // Publishes [8, 'OnJsonApiEvent', { uri, eventType, data }] with the full session.
@@ -16,6 +22,8 @@ const APHELIOS = 523;
 const NO_CHAMPION = 0;
 const NEGATIVE_ID = -1;
 const FRACTIONAL_ID = 1.5;
+const FLASH = 4;
+const IGNITE = 14;
 
 const MY_TURN = {
   actorCellId: MY_CELL_ID,
@@ -136,5 +144,45 @@ describe('champ select favorites', () => {
     expect(championIds(stored)).toStrictEqual([THRESH]);
     expect(championIds(String(THRESH))).toStrictEqual([]);
     expect(championIds({ champions: [THRESH] })).toStrictEqual([]);
+  });
+});
+
+const lockedSession = (position: string): Record<string, unknown> =>
+  session({
+    actions: [[{ ...MY_TURN, completed: true, isInProgress: false }]],
+    myTeam: [
+      {
+        cellId: MY_CELL_ID,
+        assignedPosition: position,
+        championId: THRESH,
+        spell1Id: IGNITE,
+        spell2Id: FLASH,
+      },
+    ],
+  });
+
+describe('champ select lock', () => {
+  it('yields the locked champion once with an uppercase position', () => {
+    const readLock = createLockReader();
+    const locked = sessionFrame(lockedSession(TOP_LANE));
+    expect(readLock(locked)).toStrictEqual({
+      championId: THRESH,
+      position: 'TOP',
+      spellIds: [IGNITE, FLASH],
+    });
+    expect(readLock(locked)).toBeUndefined();
+  });
+
+  it('falls back to NONE without an assigned lane and waits for the pick to complete', () => {
+    const unassigned = sessionFrame(lockedSession(''));
+    expect(createLockReader()(unassigned)).toStrictEqual({
+      championId: THRESH,
+      position: 'NONE',
+      spellIds: [IGNITE, FLASH],
+    });
+    const hovering = session({
+      myTeam: [{ cellId: MY_CELL_ID, assignedPosition: TOP_LANE, championId: THRESH }],
+    });
+    expect(createLockReader()(sessionFrame(hovering))).toBeUndefined();
   });
 });

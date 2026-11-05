@@ -42,7 +42,7 @@ export const isReadyCheckAcceptable = (message: string): boolean => {
  * @returns {Promise<void>} Resolves once the client answered the acceptance.
  */
 const broadcastAccept = async (credentials: LcuCredentials): Promise<void> => {
-  const status = await requestLcu(credentials, {
+  const { status } = await requestLcu(credentials, {
     method: 'POST',
     path: ACCEPT_PATH,
     body: ACCEPT_BODY,

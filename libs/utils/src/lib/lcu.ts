@@ -39,11 +39,17 @@ export interface JsonApiEvent {
   data: unknown;
 }
 
-/** One mutation against the local client's REST surface. */
-export interface LcuMutation {
-  method: 'POST' | 'PATCH';
+/** One call against the local client's REST surface; reads send no body. */
+export interface LcuRequest {
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
-  body: string;
+  body?: string;
+}
+
+/** Status and parsed JSON body of one call; empty or malformed bodies read as undefined. */
+export interface LcuResponse {
+  status: number;
+  body: unknown;
 }
 
 const isEventFrame = (frame: unknown): frame is unknown[] =>
@@ -70,39 +76,47 @@ export const parseJsonApiEvent = (message: string): JsonApiEvent | undefined => 
 };
 
 /**
- * Sends one mutation to the local client over its HTTPS endpoint, trusting only
+ * Sends one call to the local client over its HTTPS endpoint, trusting only
  * Riot's root CA; rejects on transport failures, foreign certificates and
  * stalled responses.
  *
  * @param {LcuCredentials} credentials Active client port and token.
- * @param {LcuMutation} mutation Method, resource path and JSON body of the call.
- * @returns {Promise<number>} Response status code of the call.
+ * @param {LcuRequest} call Method, resource path and optional JSON body of the call.
+ * @returns {Promise<LcuResponse>} Status and parsed body of the response.
  */
-export const requestLcu = (credentials: LcuCredentials, mutation: LcuMutation): Promise<number> =>
+export const requestLcu = (credentials: LcuCredentials, call: LcuRequest): Promise<LcuResponse> =>
   new Promise((resolve, reject) => {
+    const body = call.body ?? '';
     const req = request(
       {
         host: LCU_HOST,
         port: credentials.port,
-        path: mutation.path,
-        method: mutation.method,
+        path: call.path,
+        method: call.method,
         ca: RIOT_CA,
         headers: {
           Authorization: `Basic ${Buffer.from(`riot:${credentials.token}`).toString('base64')}`,
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(mutation.body),
+          'Content-Length': Buffer.byteLength(body),
         },
       },
       res => {
-        res.resume();
-        resolve(res.statusCode ?? UNKNOWN_STATUS);
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('error', reject);
+        res.on('end', () => {
+          resolve({
+            status: res.statusCode ?? UNKNOWN_STATUS,
+            body: parseJson(Buffer.concat(chunks).toString('utf8')),
+          });
+        });
       },
     );
     req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      req.destroy(new Error(`lcu: ${mutation.path} stalled`));
+      req.destroy(new Error(`lcu: ${call.path} stalled`));
     });
     req.on('error', reject);
-    req.end(mutation.body);
+    req.end(body);
   });
 
 /**
