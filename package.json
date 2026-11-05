@@ -31,7 +31,7 @@
     "@angular/compiler-cli": "22.2.0",
     "@angular/language-service": "22.2.0",
     "@commitlint/cli": "21.2.3",
-    "@commitlint/config-conventional": "21.2.3",
+    "@commitlint/config-conventional": "21.2.4",
     "@nx/angular": "24.0.3",
     "@nx/devkit": "24.0.3",
     "@nx/js": "24.0.3",
